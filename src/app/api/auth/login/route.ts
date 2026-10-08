@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { verifyPassword, signToken, hashPassword } from '@/lib/auth'
+import { verifyPassword, signToken } from '@/lib/auth'
 import { ensureSeeded, jsonError, jsonOk, getClientIp } from '@/lib/api-helpers'
 
 export async function POST(req: NextRequest) {

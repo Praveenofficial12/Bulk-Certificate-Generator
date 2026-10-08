@@ -45,8 +45,10 @@ model Template {
   orientation String   @default("landscape") // landscape | portrait
   paperSize   String   @default("A4") // A4 | Letter
   accentColor String   @default("#1e3a8a")
-  fontFamily   String   @default("Helvetica")
+  fontFamily  String   @default("Helvetica")
   config      String   // JSON: layout config (border style, positions, etc.)
+  backgroundImage String? // relative path to uploaded background image (custom templates)
+  isCustom    Boolean  @default(false)
   isDefault   Boolean  @default(false)
   usageCount  Int      @default(0)
   status      String   @default("ACTIVE") // ACTIVE | DRAFT

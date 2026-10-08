@@ -28,7 +28,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   // Otherwise regenerate on the fly from template
   try {
     const templateSlug = cert.template.slug as keyof typeof TEMPLATES_CONFIG
-    const tplCfg = TEMPLATES_CONFIG[templateSlug] ?? TEMPLATES_CONFIG['classic-blue']
+    const baseCfg = TEMPLATES_CONFIG[templateSlug] ?? TEMPLATES_CONFIG['classic-blue']
+    // Merge custom-template fields from the DB record
+    const tplCfg = {
+      ...baseCfg,
+      accentColor: cert.template.accentColor ?? baseCfg.accentColor,
+      orientation: (cert.template.orientation as 'landscape' | 'portrait') ?? baseCfg.orientation,
+      paperSize: (cert.template.paperSize as 'A4' | 'Letter') ?? baseCfg.paperSize,
+      backgroundImage: cert.template.backgroundImage ?? null,
+      isCustom: cert.template.isCustom || false,
+    }
     const tmpDir = path.join(process.cwd(), 'storage', 'preview')
     if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
     const tmpFile = path.join(tmpDir, `${cert.id}-preview.pdf`)

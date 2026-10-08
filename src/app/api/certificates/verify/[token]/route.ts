@@ -22,6 +22,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     issuedDate: cert.generatedAt,
     status: cert.status,
     verifiedAt: new Date().toISOString(),
-    template: cert.template ? { name: cert.template.name, slug: cert.template.slug } : null,
+    template: cert.template ? {
+      id: cert.template.id,
+      name: cert.template.name,
+      slug: cert.template.slug,
+      accentColor: cert.template.accentColor,
+      orientation: cert.template.orientation,
+      paperSize: cert.template.paperSize,
+      backgroundImage: cert.template.backgroundImage,
+      isCustom: cert.template.isCustom,
+    } : null,
   })
 }

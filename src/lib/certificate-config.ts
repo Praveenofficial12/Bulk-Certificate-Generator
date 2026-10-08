@@ -35,9 +35,11 @@ export interface TemplateConfig {
   fontFamily: string
   borderStyle?: 'double' | 'single' | 'ornate' | 'minimal'
   showQr?: boolean
-  showWatermark?: boolean
+  showWatermark?: boolean // reserved — watermarks are no longer rendered on downloaded PDFs
   showLogo?: boolean
   showSeal?: boolean
+  backgroundImage?: string | null // relative path to a custom background image
+  isCustom?: boolean
 }
 
 export const TEMPLATES_CONFIG: Record<TemplateSlug, TemplateConfig> = {
@@ -51,7 +53,7 @@ export const TEMPLATES_CONFIG: Record<TemplateSlug, TemplateConfig> = {
     fontFamily: 'Helvetica',
     borderStyle: 'double',
     showQr: true,
-    showWatermark: true,
+    showWatermark: false,
     showLogo: true,
     showSeal: true,
   },
@@ -65,7 +67,7 @@ export const TEMPLATES_CONFIG: Record<TemplateSlug, TemplateConfig> = {
     fontFamily: 'Times-Roman',
     borderStyle: 'ornate',
     showQr: true,
-    showWatermark: true,
+    showWatermark: false,
     showLogo: true,
     showSeal: true,
   },
@@ -93,7 +95,7 @@ export const TEMPLATES_CONFIG: Record<TemplateSlug, TemplateConfig> = {
     fontFamily: 'Times-Roman',
     borderStyle: 'single',
     showQr: true,
-    showWatermark: true,
+    showWatermark: false,
     showLogo: true,
     showSeal: true,
   },
@@ -121,7 +123,7 @@ export const TEMPLATES_CONFIG: Record<TemplateSlug, TemplateConfig> = {
     fontFamily: 'Helvetica',
     borderStyle: 'ornate',
     showQr: true,
-    showWatermark: true,
+    showWatermark: false,
     showLogo: true,
     showSeal: true,
   },

@@ -129,6 +129,9 @@ export function GeneratePage() {
   })
   const [showConfirm, setShowConfirm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [uploadingTemplate, setUploadingTemplate] = useState(false)
+  const [customTemplateName, setCustomTemplateName] = useState('')
+  const [customAccent, setCustomAccent] = useState('#1e3a8a')
 
   useEffect(() => {
     api.get<Template[]>('/templates').then((t) => {
@@ -234,6 +237,58 @@ export function GeneratePage() {
     } catch (e: any) {
       toast.error(e?.message ?? 'Failed to create job')
       setSubmitting(false)
+    }
+  }
+
+  // Upload a custom template background image
+  async function uploadCustomTemplate(file: File) {
+    if (!file) return
+    if (!customTemplateName.trim()) {
+      toast.error('Please enter a template name first')
+      return
+    }
+    setUploadingTemplate(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('name', customTemplateName.trim())
+      formData.append('accentColor', customAccent)
+      formData.append('orientation', settings.orientation)
+      formData.append('paperSize', settings.paperSize)
+      const created = await api.upload<Template>('/templates/custom', formData)
+      setTemplates((prev) => [...prev, created])
+      setSelectedTemplate(created.id)
+      setCustomTemplateName('')
+      toast.success(`Custom template "${created.name}" added`)
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Upload failed')
+    } finally {
+      setUploadingTemplate(false)
+    }
+  }
+
+  const templateDropzone = useDropzone({
+    onDrop: (files) => { if (files[0]) uploadCustomTemplate(files[0]) },
+    accept: {
+      'image/png': ['.png'],
+      'image/jpeg': ['.jpg', '.jpeg'],
+    },
+    maxFiles: 1,
+    maxSize: 8 * 1024 * 1024,
+  })
+
+  // Build a template override object for the preview component when a custom
+  // template is selected, so it can render the uploaded background image.
+  function templateOverrideFor(t: Template | undefined) {
+    if (!t) return undefined
+    if (!t.backgroundImage && !t.isCustom) return undefined
+    return {
+      templateId: t.id,
+      backgroundImage: t.backgroundImage,
+      isCustom: true,
+      accentColor: t.accentColor,
+      orientation: t.orientation as 'landscape' | 'portrait',
+      paperSize: t.paperSize as 'A4' | 'Letter',
     }
   }
 
@@ -541,12 +596,69 @@ export function GeneratePage() {
                 <div className="space-y-5">
                   <div>
                     <h2 className="text-lg font-semibold text-foreground">Select Certificate Template</h2>
-                    <p className="text-sm text-muted-foreground">Choose a professional template for your certificates.</p>
+                    <p className="text-sm text-muted-foreground">Choose a professional template or upload your own background image.</p>
                   </div>
+
+                  {/* Custom template upload zone */}
+                  <div className="rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 p-4">
+                    <div className="mb-3 flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <Upload className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-foreground">Upload a custom template</div>
+                        <div className="text-xs text-muted-foreground">Upload a PNG/JPG background image — text will be overlaid on top.</div>
+                      </div>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-[1fr_140px_auto] sm:items-end">
+                      <div>
+                        <Label className="text-xs">Template name</Label>
+                        <Input
+                          value={customTemplateName}
+                          onChange={(e) => setCustomTemplateName(e.target.value)}
+                          placeholder="e.g. Annual Day 2026"
+                          className="mt-1 h-9"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Accent color</Label>
+                        <div className="mt-1 flex items-center gap-2 h-9 rounded-md border border-border bg-background px-2">
+                          <input
+                            type="color"
+                            value={customAccent}
+                            onChange={(e) => setCustomAccent(e.target.value)}
+                            className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent p-0"
+                          />
+                          <span className="text-xs font-mono text-muted-foreground">{customAccent}</span>
+                        </div>
+                      </div>
+                      <div
+                        {...templateDropzone.getRootProps()}
+                        className={cn(
+                          'cursor-pointer rounded-md border border-dashed px-4 py-2 text-center text-xs transition-colors h-9 flex items-center justify-center gap-1.5',
+                          templateDropzone.isDragActive ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'
+                        )}
+                      >
+                        <input {...templateDropzone.getInputProps()} />
+                        {uploadingTemplate ? (
+                          <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Uploading...</>
+                        ) : templateDropzone.isDragActive ? (
+                          <>Drop image here</>
+                        ) : (
+                          <>Browse image</>
+                        )}
+                      </div>
+                    </div>
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      Allowed: PNG, JPG · Max 8MB. A semi-transparent white panel is placed behind the text to keep it readable over any background.
+                    </p>
+                  </div>
+
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {templates.map((t) => {
                       const slug = t.slug as TemplateSlug
                       const active = selectedTemplate === t.id
+                      const override = templateOverrideFor(t)
                       return (
                         <motion.button
                           key={t.id}
@@ -560,10 +672,18 @@ export function GeneratePage() {
                           <CertificatePreview
                             slug={slug}
                             data={previewData}
+                            templateOverride={override}
                           />
                           <div className="mt-3 flex items-center justify-between">
                             <div>
-                              <div className="text-sm font-semibold text-foreground">{t.name}</div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-sm font-semibold text-foreground">{t.name}</span>
+                                {t.isCustom && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-1.5 py-0.5 text-[9px] font-medium text-purple-700">
+                                    <Upload className="h-2.5 w-2.5" /> Custom
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-[10px] text-muted-foreground">{t.orientation} · {t.paperSize}</div>
                             </div>
                             {active && (
@@ -592,6 +712,7 @@ export function GeneratePage() {
                         <CertificatePreview
                           slug={(templates.find((t) => t.id === selectedTemplate)?.slug ?? 'classic-blue') as TemplateSlug}
                           data={previewData}
+                          templateOverride={templateOverrideFor(templates.find((t) => t.id === selectedTemplate))}
                         />
                       </div>
                     </div>

@@ -113,47 +113,73 @@ export async function generateCertificatePdf(
 
   const margin = 30
 
-  // === Decorative border ===
-  const b = template.borderStyle ?? 'double'
-  if (b === 'minimal') {
-    page.drawRectangle({ x: margin, y: height - margin - 6, width: width - margin * 2, height: 6, color: accentRgb })
-    page.drawRectangle({ x: margin, y: margin, width: width - margin * 2, height: 6, color: accentRgb })
-  } else if (b === 'single') {
-    page.drawRectangle({ x: margin, y: margin, width: width - margin * 2, height: height - margin * 2, borderColor: accentRgb, borderWidth: 2.5 })
-  } else if (b === 'double') {
-    page.drawRectangle({ x: margin, y: margin, width: width - margin * 2, height: height - margin * 2, borderColor: accentRgb, borderWidth: 3 })
-    page.drawRectangle({ x: margin + 8, y: margin + 8, width: width - margin * 2 - 16, height: height - margin * 2 - 16, borderColor: accentRgb, borderWidth: 1 })
-  } else {
-    // ornate
-    page.drawRectangle({ x: margin, y: margin, width: width - margin * 2, height: height - margin * 2, borderColor: accentRgb, borderWidth: 4 })
-    page.drawRectangle({ x: margin + 6, y: margin + 6, width: width - margin * 2 - 12, height: height - margin * 2 - 12, borderColor: accentRgb, borderWidth: 1 })
-    page.drawRectangle({ x: margin + 14, y: margin + 14, width: width - margin * 2 - 28, height: height - margin * 2 - 28, borderColor: accentMid, borderWidth: 0.5 })
-    const cs = 18
-    const corners = [
-      { x: margin, y: height - margin - cs },
-      { x: width - margin - cs, y: height - margin - cs },
-      { x: margin, y: margin },
-      { x: width - margin - cs, y: margin },
-    ]
-    corners.forEach((c) => {
-      page.drawRectangle({ x: c.x, y: c.y, width: cs, height: cs, color: accentRgb })
-    })
+  // === Custom background image (custom uploaded templates) ===
+  const isCustom = template.isCustom || !!(template as any).backgroundImage
+  let bgImage: any = null
+  if (isCustom && (template as any).backgroundImage) {
+    const bgPath = (template as any).backgroundImage as string
+    const absBgPath = bgPath.startsWith('/')
+      ? bgPath
+      : path.join(process.cwd(), bgPath)
+    if (fs.existsSync(absBgPath)) {
+      try {
+        const buf = fs.readFileSync(absBgPath)
+        const ext = absBgPath.toLowerCase().split('.').pop()
+        if (ext === 'png') {
+          bgImage = await pdfDoc.embedPng(new Uint8Array(buf))
+        } else if (ext === 'jpg' || ext === 'jpeg') {
+          bgImage = await pdfDoc.embedJpg(new Uint8Array(buf))
+        }
+        if (bgImage) {
+          // Draw the background image filling the entire page
+          page.drawImage(bgImage, { x: 0, y: 0, width, height })
+          // Add a subtle white panel behind the central text area to keep text readable
+          page.drawRectangle({
+            x: margin + 12,
+            y: margin + 60,
+            width: width - (margin + 12) * 2,
+            height: height - margin * 2 - 90,
+            color: rgb(1, 1, 1),
+            opacity: 0.78,
+          })
+        }
+      } catch (e) {
+        // If embedding fails, fall back to no background
+        console.error('Failed to embed background image:', e)
+      }
+    }
   }
 
-  // === Watermark ===
-  if (template.showWatermark) {
-    const wm = 'CERTIFICATE'
-    const wmSize = 110
-    const wmWidth = font.widthOfTextAtSize(wm, wmSize)
-    page.drawText(wm, {
-      x: (width - wmWidth) / 2,
-      y: height / 2 - wmSize / 2 + 20,
-      size: wmSize,
-      font,
-      color: rgb(...withAlpha(accent, 0.05)),
-      rotate: degrees(30),
-    })
+  // === Decorative border (only for built-in templates, not custom backgrounds) ===
+  if (!bgImage) {
+    const b = template.borderStyle ?? 'double'
+    if (b === 'minimal') {
+      page.drawRectangle({ x: margin, y: height - margin - 6, width: width - margin * 2, height: 6, color: accentRgb })
+      page.drawRectangle({ x: margin, y: margin, width: width - margin * 2, height: 6, color: accentRgb })
+    } else if (b === 'single') {
+      page.drawRectangle({ x: margin, y: margin, width: width - margin * 2, height: height - margin * 2, borderColor: accentRgb, borderWidth: 2.5 })
+    } else if (b === 'double') {
+      page.drawRectangle({ x: margin, y: margin, width: width - margin * 2, height: height - margin * 2, borderColor: accentRgb, borderWidth: 3 })
+      page.drawRectangle({ x: margin + 8, y: margin + 8, width: width - margin * 2 - 16, height: height - margin * 2 - 16, borderColor: accentRgb, borderWidth: 1 })
+    } else {
+      // ornate
+      page.drawRectangle({ x: margin, y: margin, width: width - margin * 2, height: height - margin * 2, borderColor: accentRgb, borderWidth: 4 })
+      page.drawRectangle({ x: margin + 6, y: margin + 6, width: width - margin * 2 - 12, height: height - margin * 2 - 12, borderColor: accentRgb, borderWidth: 1 })
+      page.drawRectangle({ x: margin + 14, y: margin + 14, width: width - margin * 2 - 28, height: height - margin * 2 - 28, borderColor: accentMid, borderWidth: 0.5 })
+      const cs = 18
+      const corners = [
+        { x: margin, y: height - margin - cs },
+        { x: width - margin - cs, y: height - margin - cs },
+        { x: margin, y: margin },
+        { x: width - margin - cs, y: margin },
+      ]
+      corners.forEach((c) => {
+        page.drawRectangle({ x: c.x, y: c.y, width: cs, height: cs, color: accentRgb })
+      })
+    }
   }
+
+  // Watermark is intentionally NOT drawn on downloaded PDFs.
 
   const cx = width / 2
   const topY = height - 90

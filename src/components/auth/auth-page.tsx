@@ -10,17 +10,12 @@ import type { User } from '@/lib/types'
 import { MotionButton } from '@/components/motion-button'
 import { toast } from 'sonner'
 
-const DEMO_ACCOUNTS = [
-  { role: 'Admin', email: 'admin@bulkcert.io', password: 'admin123', label: 'Demo Admin' },
-  { role: 'Staff', email: 'staff@bulkcert.io', password: 'staff123', label: 'Demo Staff' },
-]
-
 export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const navigate = useNav((s) => s.navigate)
   const setUser = useAuth((s) => s.setUser)
   const setAuthed = useNav((s) => s.setAuthed)
-  const [email, setEmail] = useState(mode === 'login' ? 'admin@bulkcert.io' : '')
-  const [password, setPassword] = useState(mode === 'login' ? 'admin123' : '')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -113,7 +108,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             <p className="mt-1.5 text-sm text-muted-foreground">
               {mode === 'login'
                 ? 'Enter your credentials to access the dashboard.'
-                : 'Start generating certificates in minutes.'}
+                : 'The first account you create becomes the Admin. Start generating certificates in minutes.'}
             </p>
 
             {error && (
@@ -183,29 +178,17 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             </form>
 
             {mode === 'login' && (
-              <div className="mt-6 rounded-lg border border-dashed border-border bg-muted/30 p-4">
-                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                  Demo accounts
+              <div className="mt-6 rounded-lg border border-dashed border-border bg-muted/30 p-4 text-center">
+                <div className="text-xs text-muted-foreground">
+                  New here? The first account you create becomes the Admin.
                 </div>
-                <div className="space-y-1.5">
-                  {DEMO_ACCOUNTS.map((a) => (
-                    <button
-                      key={a.email}
-                      type="button"
-                      onClick={() => {
-                        setEmail(a.email)
-                        setPassword(a.password)
-                      }}
-                      className="flex w-full items-center justify-between rounded-md bg-background px-3 py-2 text-left text-xs hover:bg-accent transition-colors"
-                    >
-                      <div>
-                        <div className="font-medium text-foreground">{a.label}</div>
-                        <div className="text-muted-foreground">{a.email} · {a.password}</div>
-                      </div>
-                      <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">{a.role}</span>
-                    </button>
-                  ))}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('register')}
+                  className="mt-2 text-xs font-medium text-primary hover:underline"
+                >
+                  Create your account →
+                </button>
               </div>
             )}
 

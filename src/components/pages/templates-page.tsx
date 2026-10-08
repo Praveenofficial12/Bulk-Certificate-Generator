@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Layers, Eye, Copy, Star, Check } from 'lucide-react'
+import { Layers, Eye, Copy, Star, Check, Upload } from 'lucide-react'
 import { useNav } from '@/lib/nav-store'
 import { api } from '@/lib/api-client'
 import type { Template } from '@/lib/types'
@@ -90,14 +90,30 @@ export function TemplatesPage() {
                 >
                   <Card className={cn('overflow-hidden', t.isDefault && 'ring-2 ring-primary')}>
                     <CardContent className="p-3">
-                      <CertificatePreview slug={slug} data={SAMPLE_DATA} />
+                      <CertificatePreview
+                        slug={slug}
+                        data={SAMPLE_DATA}
+                        templateOverride={t.backgroundImage || t.isCustom ? {
+                          templateId: t.id,
+                          backgroundImage: t.backgroundImage,
+                          isCustom: true,
+                          accentColor: t.accentColor,
+                          orientation: t.orientation as 'landscape' | 'portrait',
+                          paperSize: t.paperSize as 'A4' | 'Letter',
+                        } : undefined}
+                      />
                       <div className="mt-3 flex items-center justify-between">
                         <div>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="text-sm font-semibold text-foreground">{t.name}</span>
                             {t.isDefault && (
                               <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
                                 <Star className="h-2.5 w-2.5 fill-current" /> Default
+                              </span>
+                            )}
+                            {t.isCustom && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700">
+                                <Upload className="h-2.5 w-2.5" /> Custom
                               </span>
                             )}
                           </div>
@@ -137,7 +153,18 @@ export function TemplatesPage() {
           </DialogHeader>
           {preview && (
             <div>
-              <CertificatePreview slug={preview.slug as TemplateSlug} data={SAMPLE_DATA} />
+              <CertificatePreview
+                slug={preview.slug as TemplateSlug}
+                data={SAMPLE_DATA}
+                templateOverride={preview.backgroundImage || preview.isCustom ? {
+                  templateId: preview.id,
+                  backgroundImage: preview.backgroundImage,
+                  isCustom: true,
+                  accentColor: preview.accentColor,
+                  orientation: preview.orientation as 'landscape' | 'portrait',
+                  paperSize: preview.paperSize as 'A4' | 'Letter',
+                } : undefined}
+              />
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
                 <Stat label="Orientation" value={preview.orientation} />
                 <Stat label="Paper" value={preview.paperSize} />

@@ -198,17 +198,28 @@ export function CertificatesPage() {
               ) : data && data.items.length > 0 ? (
                 data.items.map((c) => (
                   <motion.div key={c.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card overflow-hidden">
-                    <CertificatePreview slug={(c.template?.slug ?? 'classic-blue') as TemplateSlug} data={{
-                      recipientName: c.recipientName,
-                      eventName: c.eventName,
-                      organizationName: c.organizationName,
-                      certificateTitle: c.certificateTitle,
-                      eventDate: c.eventDate ?? undefined,
-                      certificateId: c.certificateId,
-                      department: c.department ?? undefined,
-                      signatoryName: c.signatoryName ?? undefined,
-                      signatoryDesignation: c.signatoryDesignation ?? undefined,
-                    }} />
+                    <CertificatePreview
+                      slug={(c.template?.slug ?? 'classic-blue') as TemplateSlug}
+                      data={{
+                        recipientName: c.recipientName,
+                        eventName: c.eventName,
+                        organizationName: c.organizationName,
+                        certificateTitle: c.certificateTitle,
+                        eventDate: c.eventDate ?? undefined,
+                        certificateId: c.certificateId,
+                        department: c.department ?? undefined,
+                        signatoryName: c.signatoryName ?? undefined,
+                        signatoryDesignation: c.signatoryDesignation ?? undefined,
+                      }}
+                      templateOverride={c.template?.backgroundImage || c.template?.isCustom ? {
+                        templateId: c.template!.id,
+                        backgroundImage: c.template!.backgroundImage,
+                        isCustom: true,
+                        accentColor: c.template!.accentColor,
+                        orientation: c.template!.orientation as 'landscape' | 'portrait',
+                        paperSize: c.template!.paperSize as 'A4' | 'Letter',
+                      } : undefined}
+                    />
                     <div className="p-3 flex items-center justify-between">
                       <div className="min-w-0">
                         <div className="text-sm font-medium text-foreground truncate">{c.recipientName}</div>
@@ -251,17 +262,28 @@ export function CertificatesPage() {
           {preview && (
             <div>
               <div className="mx-auto max-w-2xl">
-                <CertificatePreview slug={(preview.template?.slug ?? 'classic-blue') as TemplateSlug} data={{
-                  recipientName: preview.recipientName,
-                  eventName: preview.eventName,
-                  organizationName: preview.organizationName,
-                  certificateTitle: preview.certificateTitle,
-                  eventDate: preview.eventDate ?? undefined,
-                  certificateId: preview.certificateId,
-                  department: preview.department ?? undefined,
-                  signatoryName: preview.signatoryName ?? undefined,
-                  signatoryDesignation: preview.signatoryDesignation ?? undefined,
-                }} />
+                <CertificatePreview
+                  slug={(preview.template?.slug ?? 'classic-blue') as TemplateSlug}
+                  data={{
+                    recipientName: preview.recipientName,
+                    eventName: preview.eventName,
+                    organizationName: preview.organizationName,
+                    certificateTitle: preview.certificateTitle,
+                    eventDate: preview.eventDate ?? undefined,
+                    certificateId: preview.certificateId,
+                    department: preview.department ?? undefined,
+                    signatoryName: preview.signatoryName ?? undefined,
+                    signatoryDesignation: preview.signatoryDesignation ?? undefined,
+                  }}
+                  templateOverride={preview.template?.backgroundImage || preview.template?.isCustom ? {
+                    templateId: preview.template!.id,
+                    backgroundImage: preview.template!.backgroundImage,
+                    isCustom: true,
+                    accentColor: preview.template!.accentColor,
+                    orientation: preview.template!.orientation as 'landscape' | 'portrait',
+                    paperSize: preview.template!.paperSize as 'A4' | 'Letter',
+                  } : undefined}
+                />
               </div>
               <div className="mt-4 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
                 <Detail label="Recipient" value={preview.recipientName} />

@@ -165,7 +165,16 @@ export async function processGenerationJob(jobDbId: string) {
     })
 
     const templateSlug = job.template.slug as keyof typeof TEMPLATES_CONFIG
-    const templateConfig = TEMPLATES_CONFIG[templateSlug] ?? TEMPLATES_CONFIG['classic-blue']
+    const baseConfig = TEMPLATES_CONFIG[templateSlug] ?? TEMPLATES_CONFIG['classic-blue']
+    // Merge in any custom-template fields from the DB record (backgroundImage, isCustom, accentColor)
+    const templateConfig = {
+      ...baseConfig,
+      accentColor: job.template.accentColor ?? baseConfig.accentColor,
+      orientation: (job.template.orientation as 'landscape' | 'portrait') ?? baseConfig.orientation,
+      paperSize: (job.template.paperSize as 'A4' | 'Letter') ?? baseConfig.paperSize,
+      backgroundImage: job.template.backgroundImage ?? null,
+      isCustom: job.template.isCustom || false,
+    }
     const prefix = settings.certificateIdPrefix || 'CERT'
     let seq = await findNextCertificateIdSeq(prefix)
 

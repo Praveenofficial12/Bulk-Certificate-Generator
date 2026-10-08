@@ -29,6 +29,8 @@ export interface Template {
   accentColor: string
   fontFamily: string
   config: string
+  backgroundImage?: string | null
+  isCustom?: boolean
   isDefault: boolean
   usageCount: number
   status: 'ACTIVE' | 'DRAFT'

@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { TEMPLATES_CONFIG, type CertificateData, type TemplateSlug } from '@/lib/certificate-config'
+import { TEMPLATES_CONFIG, type CertificateData, type TemplateSlug, type TemplateConfig } from '@/lib/certificate-config'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -9,10 +9,15 @@ interface Props {
   data: Partial<CertificateData>
   className?: string
   compact?: boolean
+  // Optional custom template overrides (background image, accent color, etc.)
+  templateOverride?: Partial<TemplateConfig> & { backgroundImage?: string | null; isCustom?: boolean; accentColor?: string }
 }
 
-export function CertificatePreview({ slug, data, className, compact }: Props) {
-  const cfg = TEMPLATES_CONFIG[slug] ?? TEMPLATES_CONFIG['classic-blue']
+export function CertificatePreview({ slug, data, className, compact, templateOverride }: Props) {
+  const baseCfg = TEMPLATES_CONFIG[slug] ?? TEMPLATES_CONFIG['classic-blue']
+  const cfg = templateOverride
+    ? { ...baseCfg, ...templateOverride }
+    : baseCfg
 
   const isLandscape = cfg.orientation === 'landscape'
   const aspect = isLandscape ? 'aspect-[1.414/1]' : 'aspect-[1/1.414]'
@@ -29,13 +34,22 @@ export function CertificatePreview({ slug, data, className, compact }: Props) {
 
   const border = cfg.borderStyle ?? 'double'
   const accent = cfg.accentColor
+  const isCustom = cfg.isCustom || !!cfg.backgroundImage
 
   const borderClass = useMemo(() => {
+    if (isCustom) return 'border-0'
     if (border === 'minimal') return 'border-0'
     if (border === 'single') return 'border-2'
     if (border === 'double') return 'border-[3px]'
     return 'border-4' // ornate
-  }, [border])
+  }, [border, isCustom])
+
+  // Resolve background image URL
+  const bgUrl = cfg.backgroundImage
+    ? (cfg.backgroundImage.startsWith('http')
+        ? cfg.backgroundImage
+        : `/api/templates/${(templateOverride as any)?.templateId ?? 'x'}/image`)
+    : null
 
   return (
     <div
@@ -46,22 +60,34 @@ export function CertificatePreview({ slug, data, className, compact }: Props) {
       )}
       style={{ borderColor: accent, color: accent }}
     >
+      {/* Background image (custom templates) */}
+      {bgUrl && (
+        <img
+          src={bgUrl}
+          alt="Certificate background"
+          className="absolute inset-0 h-full w-full object-cover"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+        />
+      )}
+
       {/* border wrapper */}
-      <div className={cn('absolute inset-0', borderClass, 'border-solid rounded-xl')} />
+      {!isCustom && (
+        <div className={cn('absolute inset-0', borderClass, 'border-solid rounded-xl')} />
+      )}
 
       {/* inner border for double/ornate */}
-      {(border === 'double' || border === 'ornate') && (
+      {!isCustom && (border === 'double' || border === 'ornate') && (
         <div
           className="absolute inset-2 rounded-lg border"
           style={{ borderColor: accent, borderWidth: border === 'ornate' ? '1px' : '1px' }}
         />
       )}
-      {border === 'ornate' && (
+      {!isCustom && border === 'ornate' && (
         <div className="absolute inset-3 rounded-md border opacity-50" style={{ borderColor: accent }} />
       )}
 
       {/* corner ornaments */}
-      {border === 'ornate' && (
+      {!isCustom && border === 'ornate' && (
         <>
           {[0, 1, 2, 3].map((i) => (
             <div
@@ -79,31 +105,20 @@ export function CertificatePreview({ slug, data, className, compact }: Props) {
         </>
       )}
 
-      {/* watermark */}
-      {cfg.showWatermark && (
-        <div
-          className="absolute inset-0 flex items-center justify-center text-center pointer-events-none select-none"
-          style={{ transform: 'rotate(-15deg)' }}
-        >
-          <span
-            className="font-bold uppercase tracking-widest"
-            style={{
-              color: accent,
-              opacity: 0.05,
-              fontSize: compact ? '4rem' : '5.5rem',
-            }}
-          >
-            Certificate
-          </span>
-        </div>
-      )}
-
       {/* top/bottom bars for minimal */}
-      {border === 'minimal' && (
+      {!isCustom && border === 'minimal' && (
         <>
           <div className="absolute top-0 left-0 right-0 h-1.5" style={{ backgroundColor: accent }} />
           <div className="absolute bottom-0 left-0 right-0 h-1.5" style={{ backgroundColor: accent }} />
         </>
+      )}
+
+      {/* Readability panel for custom backgrounds */}
+      {isCustom && bgUrl && (
+        <div
+          className="absolute inset-x-[4%] inset-y-[8%] rounded-lg"
+          style={{ backgroundColor: 'rgba(255,255,255,0.82)' }}
+        />
       )}
 
       {/* content */}
@@ -171,7 +186,7 @@ export function CertificatePreview({ slug, data, className, compact }: Props) {
           </div>
 
           {/* seal */}
-          {cfg.showSeal && (
+          {cfg.showSeal && !isCustom && (
             <div className="relative flex items-center justify-center">
               <div
                 className="flex h-9 w-9 items-center justify-center rounded-full text-[6px] font-bold text-white"

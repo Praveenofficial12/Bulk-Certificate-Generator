@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return jsonError('INVALID_BODY', 'Request body is not valid JSON.', 400)
   }
-  const { name, email, password, role } = body ?? {}
+  const { name, email, password } = body ?? {}
   if (!name || !email || !password) {
     return jsonError('MISSING_FIELDS', 'Name, email and password are required.', 400)
   }
@@ -23,12 +23,15 @@ export async function POST(req: NextRequest) {
   if (existing) {
     return jsonError('USER_EXISTS', 'A user with this email already exists.', 409)
   }
+  // The first user to register becomes the Admin; subsequent users are Staff.
+  const userCount = await db.user.count()
+  const role = userCount === 0 ? 'ADMIN' : 'STAFF'
   const user = await db.user.create({
     data: {
       name: String(name).trim(),
       email: normalized,
       password: hashPassword(String(password)),
-      role: role === 'ADMIN' ? 'ADMIN' : 'STAFF',
+      role,
     },
   })
   const token = signToken({ userId: user.id, role: user.role })

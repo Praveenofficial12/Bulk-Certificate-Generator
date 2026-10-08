@@ -137,7 +137,18 @@ export function VerifyPage() {
 
         {/* Certificate preview */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6">
-          <CertificatePreview slug={(data.template?.slug ?? 'classic-blue') as TemplateSlug} data={previewData} />
+          <CertificatePreview
+            slug={(data.template?.slug ?? 'classic-blue') as TemplateSlug}
+            data={previewData}
+            templateOverride={data.template?.backgroundImage || data.template?.isCustom ? {
+              templateId: data.template!.id,
+              backgroundImage: data.template!.backgroundImage,
+              isCustom: true,
+              accentColor: data.template!.accentColor,
+              orientation: data.template!.orientation as 'landscape' | 'portrait',
+              paperSize: data.template!.paperSize as 'A4' | 'Letter',
+            } : undefined}
+          />
         </motion.div>
 
         {/* Details */}
