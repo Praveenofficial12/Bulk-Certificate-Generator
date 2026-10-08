@@ -1,0 +1,195 @@
+// Bulk Certificate Generator - Prisma schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  password      String
+  role          String   @default("ADMIN") // ADMIN | STAFF
+  avatar        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  jobs           GenerationJob[]
+  certificates   Certificate[]
+  recipients     Recipient[]
+  activityLogs   ActivityLog[]
+  notifications  Notification[]
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  logo      String?
+  address   String?
+  website   String?
+  email     String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  orientation String   @default("landscape") // landscape | portrait
+  paperSize   String   @default("A4") // A4 | Letter
+  accentColor String   @default("#1e3a8a")
+  fontFamily   String   @default("Helvetica")
+  config      String   // JSON: layout config (border style, positions, etc.)
+  isDefault   Boolean  @default(false)
+  usageCount  Int      @default(0)
+  status      String   @default("ACTIVE") // ACTIVE | DRAFT
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  jobs         GenerationJob[]
+  certificates Certificate[]
+}
+
+model Recipient {
+  id            String   @id @default(cuid())
+  name          String
+  email         String?
+  phone         String?
+  registrationId String?
+  department    String?
+  institution   String?
+  event         String?
+  role          String?
+  customField1  String?
+  customField2  String?
+  status        String   @default("ACTIVE") // ACTIVE | INVALID | ARCHIVED
+  userId        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  certificates  Certificate[]
+}
+
+model GenerationJob {
+  id                 String   @id @default(cuid())
+  jobId              String   @unique // human readable e.g. JOB-2026-0001
+  userId             String
+  eventName          String
+  organizationName   String
+  certificateTitle   String
+  description        String?
+  eventDate          String?
+  signatoryName      String?
+  signatoryDesignation String?
+  venue              String?
+  duration          String?
+  customMessage      String?
+  templateId         String
+  totalRecipients    Int      @default(0)
+  processedCount     Int      @default(0)
+  successfulCount    Int      @default(0)
+  failedCount        Int      @default(0)
+  progressPercentage Float   @default(0)
+  status             String   @default("PENDING") // PENDING | PROCESSING | COMPLETED | PARTIALLY_COMPLETED | FAILED | CANCELLED
+  errorMessage       String?
+  outputZipPath      String?
+  reportPath         String?
+  settings           String   // JSON of generation settings
+  recipientsSnapshot String?  // JSON of recipients (for the batch)
+  createdAt          DateTime @default(now())
+  startedAt          DateTime?
+  completedAt        DateTime?
+  updatedAt          DateTime @updatedAt
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template      Template      @relation(fields: [templateId], references: [id])
+  certificates  Certificate[]
+
+  @@index([status])
+  @@index([userId])
+}
+
+model Certificate {
+  id                 String   @id @default(cuid())
+  certificateId      String   @unique // e.g. VSB-AI-2026-0001
+  jobId              String
+  templateId         String
+  userId             String
+  recipientName      String
+  recipientEmail     String?
+  department         String?
+  registrationId     String?
+  eventName          String
+  organizationName   String
+  certificateTitle   String
+  eventDate          String?
+  signatoryName      String?
+  signatoryDesignation String?
+  recipientId        String?
+  filePath           String
+  fileName           String
+  status             String   @default("GENERATED") // GENERATED | FAILED | PENDING
+  errorMessage       String?
+  verificationToken  String   @unique
+  generatedAt        DateTime @default(now())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job        GenerationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  template   Template    @relation(fields: [templateId], references: [id])
+  recipient  Recipient?  @relation(fields: [recipientId], references: [id], onDelete: SetNull)
+
+  @@index([jobId])
+  @@index([userId])
+  @@index([status])
+  @@index([recipientEmail])
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  userName   String
+  action     String
+  resource   String?
+  resourceId String?
+  status     String   @default("SUCCESS") // SUCCESS | FAILED | INFO
+  ipAddress  String?
+  details    String? // JSON
+  createdAt  DateTime @default(now())
+
+  user       User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([action])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // INFO | SUCCESS | WARNING | ERROR
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+}
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+  updatedAt DateTime @updatedAt
+}
